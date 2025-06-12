@@ -1,7 +1,15 @@
 package main
 
-import "log"
+import (
+	"log"
+	"s3manager/config"
+)
 
 func main() {
-	log.Println("Test")
+	cnf, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	log.Println(cnf.ApiURL)
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"s3manager/cmd"
 	"s3manager/config"
 )
 
@@ -11,5 +13,8 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	log.Println(cnf.ApiURL)
+	if err := cmd.Execute(cnf); err != nil {
+		log.Printf("Error executing command: %v", err)
+		os.Exit(1)
+	}
 }

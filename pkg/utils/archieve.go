@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"s3manager/internal/models"
@@ -16,10 +17,20 @@ func CreateArchive(paths []string, outputPath string) (*models.ArchiveInfo, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create archive file: %w", err)
 	}
-	defer outFile.Close()
+	defer func(outFile *os.File) {
+		err := outFile.Close()
+		if err != nil {
+			slog.Error("failed to close archive file", "error", err)
+		}
+	}(outFile)
 
 	zipWriter := zip.NewWriter(outFile)
-	defer zipWriter.Close()
+	defer func(zipWriter *zip.Writer) {
+		err := zipWriter.Close()
+		if err != nil {
+			slog.Error("failed to close zip writer", "error", err)
+		}
+	}(zipWriter)
 
 	var originalSize int64
 	createdAt := time.Now()
@@ -103,7 +114,12 @@ func addToArchive(zipWriter *zip.Writer, sourcePath, basePath string) error {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				slog.Error("failed to close file in archive", "file", path, "error", err)
+			}
+		}(file)
 
 		_, err = io.Copy(writer, file)
 		return err

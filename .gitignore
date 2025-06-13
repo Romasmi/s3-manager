@@ -1,3 +1,5 @@
 .idea
 tmp/*
 !tmp/.gitkeep
+.env
+!tmp/logs/.gitkeep

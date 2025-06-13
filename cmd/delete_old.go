@@ -46,7 +46,6 @@ func runDeleteOld(cmd *cobra.Command) {
 	if days <= 0 {
 		err := fmt.Errorf("days must be greater than 0")
 		utils.PrintError(err, "delete-old")
-		handleError(err, cmd, "delete-old")
 		return
 	}
 
@@ -75,7 +74,6 @@ func runDeleteOld(cmd *cobra.Command) {
 	client, err := s3client.New(cfg)
 	if err != nil {
 		utils.PrintError(err, "delete-old")
-		handleError(err, cmd, "delete-old")
 		return
 	}
 
@@ -98,7 +96,6 @@ func runDeleteOld(cmd *cobra.Command) {
 		result, err := client.DeleteOldFiles(ctx, folder, days)
 		if err != nil {
 			utils.PrintError(err, "delete-old")
-			handleError(err, cmd, "delete-old")
 			return
 		}
 
@@ -107,20 +104,17 @@ func runDeleteOld(cmd *cobra.Command) {
 
 		if err := utils.PrintJSON(result); err != nil {
 			utils.PrintError(err, "delete-old")
-			handleError(err, cmd, "delete-old")
 			return
 		}
 	} else {
 		result, err := client.DeleteOldFiles(ctx, folder, days)
 		if err != nil {
 			utils.PrintError(err, "delete-old")
-			handleError(err, cmd, "delete-old")
 			return
 		}
 
 		if err := utils.PrintJSON(result); err != nil {
 			utils.PrintError(err, "delete-old")
-			handleError(err, cmd, "delete-old")
 			return
 		}
 	}

@@ -58,7 +58,6 @@ func runUpload(cmd *cobra.Command, args []string) {
 
 	if err := utils.ValidatePaths(args); err != nil {
 		utils.PrintError(err, "upload")
-		handleError(err, cmd, "upload")
 		return
 	}
 
@@ -105,7 +104,6 @@ func runUpload(cmd *cobra.Command, args []string) {
 	client, err := s3client.New(cfg)
 	if err != nil {
 		utils.PrintError(err, "upload")
-		handleError(err, cmd, "upload")
 		return
 	}
 
@@ -127,14 +125,12 @@ func runUpload(cmd *cobra.Command, args []string) {
 		result := createDryRunResult(args, destination, shouldArchive, getBucketName(cmd))
 		if err := utils.PrintJSON(result); err != nil {
 			utils.PrintError(err, "upload")
-			handleError(err, cmd, "upload")
 			return
 		}
 	} else {
 		result, err := client.UploadFiles(ctx, args, destination, shouldArchive)
 		if err != nil {
 			utils.PrintError(err, "upload")
-			handleError(err, cmd, "upload")
 			return
 		}
 
@@ -144,7 +140,6 @@ func runUpload(cmd *cobra.Command, args []string) {
 
 		if err := utils.PrintJSON(result); err != nil {
 			utils.PrintError(err, "upload")
-			handleError(err, cmd, "upload")
 			return
 		}
 	}

@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
-	"os"
 	"s3manager/config"
 )
 
@@ -44,11 +42,4 @@ func getBucketName(cmd *cobra.Command) string {
 func isVerbose(cmd *cobra.Command) bool {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	return verbose
-}
-
-func handleError(err error, cmd *cobra.Command, command string) {
-	if isVerbose(cmd) {
-		fmt.Fprintf(os.Stderr, "Error in %s: %v\n", command, err)
-	}
-	os.Exit(1)
 }

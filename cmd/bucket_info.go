@@ -30,7 +30,6 @@ func runBucketInfo(cmd *cobra.Command) {
 	client, err := s3client.New(cfg)
 	if err != nil {
 		utils.PrintError(err, "bucket-info")
-		handleError(err, cmd, "bucket-info")
 		return
 	}
 
@@ -44,7 +43,6 @@ func runBucketInfo(cmd *cobra.Command) {
 	info, err := client.GetBucketInfo(ctx)
 	if err != nil {
 		utils.PrintError(err, "bucket-info")
-		handleError(err, cmd, "bucket-info")
 		return
 	}
 
@@ -54,7 +52,6 @@ func runBucketInfo(cmd *cobra.Command) {
 
 	if err := utils.PrintJSON(info); err != nil {
 		utils.PrintError(err, "bucket-info")
-		handleError(err, cmd, "bucket-info")
 		return
 	}
 

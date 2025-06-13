@@ -91,32 +91,15 @@ func runDeleteOld(cmd *cobra.Command) {
 		}
 	}
 
-	if dryRun {
-		// TODO: Implement dry-run mode that only lists files to be deleted
-		result, err := client.DeleteOldFiles(ctx, folder, days)
-		if err != nil {
-			utils.PrintError(err, "delete-old")
-			return
-		}
+	result, err := client.DeleteOldFiles(ctx, folder, days, dryRun)
+	if err != nil {
+		utils.PrintError(err, "delete-old")
+		return
+	}
 
-		result.DeletedCount = 0
-		result.DeletedFiles = []string{}
-
-		if err := utils.PrintJSON(result); err != nil {
-			utils.PrintError(err, "delete-old")
-			return
-		}
-	} else {
-		result, err := client.DeleteOldFiles(ctx, folder, days)
-		if err != nil {
-			utils.PrintError(err, "delete-old")
-			return
-		}
-
-		if err := utils.PrintJSON(result); err != nil {
-			utils.PrintError(err, "delete-old")
-			return
-		}
+	if err := utils.PrintJSON(result); err != nil {
+		utils.PrintError(err, "delete-old")
+		return
 	}
 
 	if isVerbose(cmd) {

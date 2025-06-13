@@ -67,7 +67,7 @@ func (c *Client) GetBucketInfo(ctx context.Context) (*models.BucketInfo, error) 
 
 	region := string(locationResp.LocationConstraint)
 	if region == "" {
-		region = c.config.Region // Use configured region as fallback
+		region = c.config.Region // Use configured a region as a fallback
 	}
 
 	var objectCount int64

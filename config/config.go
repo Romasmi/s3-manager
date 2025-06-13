@@ -8,7 +8,6 @@ import (
 
 type Config struct {
 	ApiURL     string
-	Token      string
 	AccessKey  string
 	SecretKey  string
 	BucketName string
@@ -23,7 +22,6 @@ func Load() (*Config, error) {
 
 	config := &Config{
 		ApiURL:     getEnv("API_URL", ""),
-		Token:      getEnv("TOKEN", ""),
 		AccessKey:  getEnv("ACCESS_KEY", ""),
 		SecretKey:  getEnv("SECRET_KEY", ""),
 		BucketName: getEnv("BUCKET_NAME", ""),

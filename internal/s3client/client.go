@@ -118,7 +118,7 @@ func (c *Client) GetBucketInfo(ctx context.Context) (*models.BucketInfo, error) 
 	}, nil
 }
 
-func (c *Client) DeleteOldFiles(ctx context.Context, folder string, daysOld int) (*models.DeleteResult, error) {
+func (c *Client) DeleteOldFiles(ctx context.Context, folder string, daysOld int, dryMode bool) (*models.DeleteResult, error) {
 	bucketName := c.config.BucketName
 	cutoffDate := time.Now().AddDate(0, 0, -daysOld)
 
@@ -154,27 +154,29 @@ func (c *Client) DeleteOldFiles(ctx context.Context, folder string, daysOld int)
 	}
 
 	deletedCount := 0
-	for i := 0; i < len(toDelete); i += 1000 {
-		end := i + 1000
-		if end > len(toDelete) {
-			end = len(toDelete)
-		}
+	if !dryMode {
+		for i := 0; i < len(toDelete); i += 1000 {
+			end := i + 1000
+			if end > len(toDelete) {
+				end = len(toDelete)
+			}
 
-		batch := toDelete[i:end]
-		if len(batch) == 0 {
-			continue
-		}
+			batch := toDelete[i:end]
+			if len(batch) == 0 {
+				continue
+			}
 
-		_, err := c.s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
-			Bucket: aws.String(bucketName),
-			Delete: &types.Delete{
-				Objects: batch,
-			},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to delete objects batch: %w", err)
+			_, err := c.s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+				Bucket: aws.String(bucketName),
+				Delete: &types.Delete{
+					Objects: batch,
+				},
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete objects batch: %w", err)
+			}
+			deletedCount += len(batch)
 		}
-		deletedCount += len(batch)
 	}
 
 	return &models.DeleteResult{

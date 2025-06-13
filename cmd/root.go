@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
+	"os"
 	"s3manager/config"
 )
 
@@ -23,6 +25,30 @@ func Execute(config *config.Config) error {
 }
 
 func init() {
+	rootCmd.AddCommand(bucketInfoCmd)
+	rootCmd.AddCommand(deleteOldCmd)
+	rootCmd.AddCommand(uploadCmd)
+
 	rootCmd.PersistentFlags().StringP("bucket", "b", "", "Override bucket name from config")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")
+}
+
+func getBucketName(cmd *cobra.Command) string {
+	bucket, _ := cmd.Flags().GetString("bucket")
+	if bucket != "" {
+		return bucket
+	}
+	return cfg.BucketName
+}
+
+func isVerbose(cmd *cobra.Command) bool {
+	verbose, _ := cmd.Flags().GetBool("verbose")
+	return verbose
+}
+
+func handleError(err error, cmd *cobra.Command, command string) {
+	if isVerbose(cmd) {
+		fmt.Fprintf(os.Stderr, "Error in %s: %v\n", command, err)
+	}
+	os.Exit(1)
 }

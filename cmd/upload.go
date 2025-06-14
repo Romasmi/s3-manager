@@ -87,13 +87,13 @@ func runUpload(cmd *cobra.Command, args []string) {
 		bucketName := getBucketName(cmd)
 
 		fmt.Printf("Upload operation summary:\n")
-		fmt.Printf("  Bucket: %s\n", bucketName)
-		fmt.Printf("  Destination: %s\n", getDestinationDisplay(destination))
-		fmt.Printf("  Files/Folders: %v\n", args)
-		fmt.Printf("  Archive: %t\n", shouldArchive)
+		fmt.Printf("Bucket: %s\n", bucketName)
+		fmt.Printf("Destination: %s\n", getDestinationDisplay(destination))
+		fmt.Printf("Files/Folders: %v\n", args)
+		fmt.Printf("Archive: %t\n", shouldArchive)
 
 		if shouldArchive && archiveName != "" {
-			fmt.Printf("  Archive name: %s\n", archiveName)
+			fmt.Printf("Archive name: %s\n", archiveName)
 		}
 
 		fmt.Print("Continue with upload? (y/N): ")

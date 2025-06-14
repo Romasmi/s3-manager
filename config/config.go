@@ -1,8 +1,8 @@
 package config
 
 import (
-	"fmt"
 	"github.com/joho/godotenv"
+	"log/slog"
 	"os"
 )
 
@@ -16,8 +16,7 @@ type Config struct {
 
 func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
-		fmt.Printf("Warning: .env file not found, using environment variables only")
-		panic(err)
+		slog.Warn(".env file not found, using environment variables only")
 	}
 
 	config := &Config{

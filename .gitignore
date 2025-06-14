@@ -2,4 +2,4 @@
 tmp/*
 !tmp/.gitkeep
 .env
-!tmp/logs/.gitkeep
+s3manager

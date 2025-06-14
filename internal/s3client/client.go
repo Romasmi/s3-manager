@@ -3,6 +3,7 @@ package s3client
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -232,7 +233,7 @@ func (c *Client) UploadFiles(ctx context.Context, paths []string, destinationPat
 		defer func(path string) {
 			err := utils.CleanupTempFile(path)
 			if err != nil {
-				fmt.Printf("Warning: failed to clean up temporary archive file %s: %v\n", path, err)
+				log.Printf("Warning: failed to clean up temporary archive file %s: %v\n", path, err)
 			}
 		}(archivePath)
 	} else {
@@ -332,7 +333,7 @@ func (c *Client) uploadSingleFile(ctx context.Context, uploader *manager.Uploade
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			fmt.Printf("Warning: failed to close file %s: %v\n", localPath, err)
+			log.Printf("Warning: failed to close file %s: %v", localPath, err)
 		}
 	}(file)
 

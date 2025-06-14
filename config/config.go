@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/joho/godotenv"
-	"log"
+	"log/slog"
 	"os"
 )
 
@@ -16,7 +16,7 @@ type Config struct {
 
 func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf(".env file not found, using environment variables only")
+		slog.Warn(".env file not found, using environment variables only")
 	}
 
 	config := &Config{

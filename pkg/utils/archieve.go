@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"s3manager/internal/models"
@@ -23,7 +23,7 @@ func CreateArchive(paths []string, outputPath string) (*models.ArchiveInfo, erro
 	}
 	defer func(outFile *os.File) {
 		if err := outFile.Close(); err != nil {
-			log.Printf("failed to close archive file %v", err)
+			slog.Warn("Failed to close archive file", "error", err)
 		}
 	}(outFile)
 
@@ -113,7 +113,7 @@ func addToArchive(zipWriter *zip.Writer, sourcePath, basePath string) error {
 		defer func(file *os.File) {
 			err := file.Close()
 			if err != nil {
-				log.Printf("failed to close file in archive %s: %v", path, err)
+				slog.Warn("Failed to close file in archive", "path", path, "error", err)
 			}
 		}(file)
 

@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"s3manager/internal/models"
 	"time"
 )
@@ -38,7 +38,7 @@ func PrintError(err error, command string) {
 	}
 	err = PrintJSON(errorResp)
 	if err != nil {
-		log.Printf("failed to print error in JSON format: %v", err)
+		slog.Error("Failed to print error in JSON format", "error", err)
 		fmt.Println("Error: ", errorResp)
 		return
 	}

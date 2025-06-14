@@ -64,7 +64,11 @@ func runDeleteOld(cmd *cobra.Command) {
 		fmt.Print("Are you sure? (yes/no): ")
 
 		var response string
-		fmt.Scanln(&response)
+		_, err := fmt.Scanln(&response)
+		if err != nil {
+			utils.PrintError(err, "delete-old")
+			return
+		}
 		if response != "yes" && response != "y" && response != "YES" {
 			fmt.Println("Operation cancelled.")
 			return

@@ -70,7 +70,11 @@ func runUpload(cmd *cobra.Command, args []string) {
 			if !isDirectory(args[0]) {
 				fmt.Printf("Upload single file '%s' as archive? (y/N): ", args[0])
 				var response string
-				fmt.Scanln(&response)
+				_, err := fmt.Scanln(&response)
+				if err != nil {
+					utils.PrintError(err, "upload")
+					return
+				}
 				if response != "y" && response != "yes" && response != "Y" && response != "YES" {
 					shouldArchive = false
 				}
@@ -94,7 +98,11 @@ func runUpload(cmd *cobra.Command, args []string) {
 
 		fmt.Print("Continue with upload? (y/N): ")
 		var response string
-		fmt.Scanln(&response)
+		_, err := fmt.Scanln(&response)
+		if err != nil {
+			utils.PrintError(err, "upload")
+			return
+		}
 		if response != "y" && response != "yes" && response != "Y" && response != "YES" {
 			fmt.Println("Upload cancelled.")
 			return

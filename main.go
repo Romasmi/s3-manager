@@ -10,11 +10,10 @@ import (
 func main() {
 	cnf, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		log.Fatalf("Failed to load configuration " + err.Error())
 	}
-
 	if err := cmd.Execute(cnf); err != nil {
-		log.Printf("Error executing command: %v", err)
+		log.Printf("Failed to execute command " + err.Error())
 		os.Exit(1)
 	}
 }

@@ -219,7 +219,6 @@ func (c *Client) UploadFiles(ctx context.Context, paths []string, destinationPat
 
 		remotePath := c.buildRemotePath(destinationPath, filepath.Base(archivePath))
 		if err := c.uploadSingleFile(ctx, uploader, archivePath, remotePath); err != nil {
-			utils.CleanupTempFile(archivePath)
 			return nil, fmt.Errorf("failed to upload archive: %w", err)
 		}
 
@@ -230,7 +229,12 @@ func (c *Client) UploadFiles(ctx context.Context, paths []string, destinationPat
 			IsArchived: true,
 		})
 
-		defer utils.CleanupTempFile(archivePath)
+		defer func(path string) {
+			err := utils.CleanupTempFile(path)
+			if err != nil {
+				fmt.Printf("Warning: failed to clean up temporary archive file %s: %v\n", path, err)
+			}
+		}(archivePath)
 	} else {
 		for _, path := range paths {
 			items, size, err := c.uploadPath(ctx, uploader, path, destinationPath)
@@ -325,7 +329,12 @@ func (c *Client) uploadSingleFile(ctx context.Context, uploader *manager.Uploade
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", localPath, err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close file %s: %v\n", localPath, err)
+		}
+	}(file)
 
 	contentType := c.detectContentType(localPath)
 

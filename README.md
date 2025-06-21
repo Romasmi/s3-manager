@@ -194,3 +194,57 @@ Your AWS credentials need the following permissions:
 
 - Never commit `.env` files to version control
 - Review delete operations carefully - deletions are permanent
+
+## Testing
+
+The project includes both unit tests and integration tests.
+
+### Running Unit Tests
+
+Unit tests can be run without any external dependencies:
+
+```bash
+# Run all unit tests
+go test ./...
+
+# Run tests with verbose output
+go test -v ./...
+
+# Run tests for a specific package
+go test ./pkg/utils
+```
+
+### Running Integration Tests
+
+Integration tests require a real S3 connection and are skipped by default. To run them:
+
+1. Set up environment variables for testing:
+
+```bash
+# Create a .env.test file
+cp .env.example .env.test
+nano .env.test
+```
+
+2. Configure the test environment variables:
+
+```
+# S3 connection details for testing
+TEST_BUCKET_NAME=your-test-bucket
+TEST_REGION=your-test-region
+TEST_API_URL=your-test-api-url
+TEST_ACCESS_KEY=your-test-access-key
+TEST_SECRET_KEY=your-test-secret-key
+
+# Enable integration tests
+S3_INTEGRATION_TEST=true
+```
+
+3. Run the integration tests:
+
+```bash
+# Load test environment variables and run integration tests
+export $(grep -v '^#' .env.test | xargs) && go test -v ./...
+```
+
+**Note**: Integration tests will create and delete files in your test bucket. Make sure to use a dedicated test bucket, not a production bucket.

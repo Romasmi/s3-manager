@@ -1,7 +1,10 @@
 package s3client
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"os"
@@ -326,24 +329,22 @@ func (c *Client) uploadPath(ctx context.Context, uploader *manager.Uploader, loc
 }
 
 func (c *Client) uploadSingleFile(ctx context.Context, uploader *manager.Uploader, localPath, remotePath string) error {
-	file, err := os.Open(localPath)
+	fileContent, err := os.ReadFile(localPath)
 	if err != nil {
-		return fmt.Errorf("failed to open file %s: %w", localPath, err)
+		return fmt.Errorf("failed to open fileContent %s: %w", localPath, err)
 	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			slog.Warn("Failed to close file", "path", localPath, "error", err)
-		}
-	}(file)
 
 	contentType := c.detectContentType(localPath)
+	h := sha256.New()
+	h.Write(fileContent)
+	checksum := h.Sum(nil)
 
 	_, err = uploader.Upload(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(c.config.BucketName),
-		Key:         aws.String(remotePath),
-		Body:        file,
-		ContentType: aws.String(contentType),
+		Bucket:         aws.String(c.config.BucketName),
+		Key:            aws.String(remotePath),
+		Body:           bytes.NewReader(fileContent),
+		ContentType:    aws.String(contentType),
+		ChecksumSHA256: aws.String(base64.StdEncoding.EncodeToString(checksum)),
 	})
 
 	if err != nil {

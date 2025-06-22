@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"s3manager/internal/s3client"
 	"s3manager/pkg/utils"
+	"slices"
 	"strings"
 	"time"
 )
@@ -75,7 +76,7 @@ func runUpload(cmd *cobra.Command, args []string) {
 					utils.PrintError(err, "upload")
 					return
 				}
-				if response != "y" && response != "yes" && response != "Y" && response != "YES" {
+				if slices.Contains([]string{"y", "yes"}, strings.ToLower(response)) {
 					shouldArchive = false
 				}
 			}
@@ -103,7 +104,7 @@ func runUpload(cmd *cobra.Command, args []string) {
 			utils.PrintError(err, "upload")
 			return
 		}
-		if response != "y" && response != "yes" && response != "Y" && response != "YES" {
+		if !slices.Contains([]string{"y", "yes"}, strings.ToLower(response)) {
 			fmt.Println("Upload cancelled.")
 			return
 		}

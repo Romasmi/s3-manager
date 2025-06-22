@@ -6,6 +6,7 @@ A Go-based CLI tool for managing S3-compatible storage.
 
 - 📊 **Bucket Information**: Get detailed bucket statistics including object count, total size, and metadata
 - 🗂️ **File Cleanup**: Delete files older than specified days with folder-specific targeting
+- 📤 **File Upload**: Upload files and folders with automatic archiving options
 - 🔧 **Flexible Configuration**: Support for custom S3 endpoints (MinIO, DigitalOcean Spaces, etc.)
 - 🛡️ **Safety Features**: Confirmation prompts and dry-run mode for delete operations
 - ⚡ **Performance**: Efficient batch operations for large buckets
@@ -134,6 +135,49 @@ Remove files older than specified days:
 }
 ```
 
+### Upload Files and Folders
+
+Upload files or folders to S3 with optional archiving:
+
+```bash
+# Upload a single file (will prompt for archiving)
+./s3manager upload document.pdf
+
+# Upload multiple files and folders (archived by default)
+./s3manager upload folder1/ file1.txt file2.pdf
+
+# Upload without archiving (individual files)
+./s3manager upload file1.txt file2.txt --no-archive
+
+# Upload to specific folder in S3
+./s3manager upload data/ --destination "backups/2024"
+
+# Upload with custom archive name
+./s3manager upload project/ --archive-name "v1.0.0"
+```
+
+**Example Output:**
+```json
+{
+  "bucket_name": "my-bucket",
+  "destination_path": "backups/2024",
+  "items": [
+    {
+      "local_path": "data/file1.txt",
+      "remote_path": "backups/2024/archive-20240315-142233.zip",
+      "size": 1048576,
+      "is_archived": true
+    }
+  ],
+  "total_files": 1,
+  "total_size_bytes": 1048576,
+  "total_size_human": "1.0 MB",
+  "operation_time": "2024-03-15T14:22:33Z",
+  "archive_created": true,
+  "upload_duration": "2.5s"
+}
+```
+
 ## Command Reference
 
 ### Global Flags
@@ -179,7 +223,8 @@ Your AWS credentials need the following permissions:
                 "s3:ListBucket",
                 "s3:GetBucketLocation",
                 "s3:ListAllMyBuckets",
-                "s3:DeleteObject"
+                "s3:DeleteObject",
+                "s3:PutObject"
             ],
             "Resource": [
                 "arn:aws:s3:::*",

@@ -1,11 +1,11 @@
 package s3client
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -329,22 +329,47 @@ func (c *Client) uploadPath(ctx context.Context, uploader *manager.Uploader, loc
 }
 
 func (c *Client) uploadSingleFile(ctx context.Context, uploader *manager.Uploader, localPath, remotePath string) error {
-	fileContent, err := os.ReadFile(localPath)
+	fileInfo, err := os.Stat(localPath)
 	if err != nil {
-		return fmt.Errorf("failed to open fileContent %s: %w", localPath, err)
+		return fmt.Errorf("failed to stat file %s: %w", localPath, err)
 	}
 
+	file, err := os.Open(localPath)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %w", localPath, err)
+	}
+	defer file.Close()
+
 	contentType := c.detectContentType(localPath)
-	h := sha256.New()
-	h.Write(fileContent)
-	checksum := h.Sum(nil)
+
+	// Configure the uploader to use multipart uploads for large files
+	// The AWS SDK will automatically use multipart uploads for files larger than the PartSize
+	uploader.PartSize = 5 * 1024 * 1024 // 5MB per part
+	uploader.Concurrency = 5            // 5 concurrent uploads
+
+	// skip the checksum for large files (> 100MB)
+	var checksumStr *string
+	if fileInfo.Size() <= 100*1024*1024 { // 100MB threshold
+		h := sha256.New()
+		if _, err := io.Copy(h, file); err != nil {
+			return fmt.Errorf("failed to calculate checksum: %w", err)
+		}
+		checksum := h.Sum(nil)
+		checksumEncoded := base64.StdEncoding.EncodeToString(checksum)
+		checksumStr = aws.String(checksumEncoded)
+
+		if _, err := file.Seek(0, 0); err != nil {
+			return fmt.Errorf("failed to reset file pointer: %w", err)
+		}
+	}
 
 	_, err = uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:         aws.String(c.config.BucketName),
 		Key:            aws.String(remotePath),
-		Body:           bytes.NewReader(fileContent),
+		Body:           file,
 		ContentType:    aws.String(contentType),
-		ChecksumSHA256: aws.String(base64.StdEncoding.EncodeToString(checksum)),
+		ContentLength:  aws.Int64(fileInfo.Size()),
+		ChecksumSHA256: checksumStr,
 	})
 
 	if err != nil {

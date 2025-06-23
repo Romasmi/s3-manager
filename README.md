@@ -35,6 +35,11 @@ go build -o s3manager
 go install
 ```
 
+### Build for Linux x64
+``` bash
+GOOS=linux GOARCH=amd64 go build -o s3manager
+```
+
 ## Configuration
 
 ### Environment Variables

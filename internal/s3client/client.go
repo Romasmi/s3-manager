@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -391,6 +392,85 @@ func (c *Client) buildRemotePath(destinationPath, filename string) string {
 	}
 
 	return destinationPath + filename
+}
+
+func (c *Client) DownloadLatestFile(ctx context.Context, folder, destinationPath string) (*models.DownloadResult, error) {
+	startTime := time.Now()
+	bucketName := c.config.BucketName
+
+	prefix := folder
+	if !strings.HasSuffix(prefix, "/") && prefix != "" {
+		prefix += "/"
+	}
+
+	var objects []types.Object
+	paginator := s3.NewListObjectsV2Paginator(c.s3Client, &s3.ListObjectsV2Input{
+		Bucket: aws.String(bucketName),
+		Prefix: aws.String(prefix),
+	})
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list objects: %w", err)
+		}
+
+		objects = append(objects, page.Contents...)
+	}
+
+	if len(objects) == 0 {
+		return nil, fmt.Errorf("no files found in folder: %s", folder)
+	}
+
+	sort.Slice(objects, func(i, j int) bool {
+		return objects[i].LastModified.After(*objects[j].LastModified)
+	})
+
+	latestObject := objects[0]
+
+	if err := os.MkdirAll(destinationPath, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	fileName := filepath.Base(*latestObject.Key)
+	localFilePath := filepath.Join(destinationPath, fileName)
+
+	file, err := os.Create(localFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	downloader := manager.NewDownloader(c.s3Client)
+	_, err = downloader.Download(ctx, file, &s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    latestObject.Key,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to download file: %w", err)
+	}
+
+	duration := time.Since(startTime)
+
+	downloadItem := models.DownloadItem{
+		RemotePath:   *latestObject.Key,
+		LocalPath:    localFilePath,
+		Size:         *latestObject.Size,
+		LastModified: latestObject.LastModified.Format(time.RFC3339),
+	}
+
+	result := &models.DownloadResult{
+		BucketName:       bucketName,
+		SourcePath:       folder,
+		Items:            []models.DownloadItem{downloadItem},
+		TotalFiles:       1,
+		TotalSizeBytes:   *latestObject.Size,
+		TotalSizeHuman:   utils.FormatBytes(*latestObject.Size),
+		OperationTime:    utils.FormatTime(startTime),
+		DownloadDuration: duration.String(),
+	}
+
+	return result, nil
 }
 
 func (c *Client) detectContentType(filename string) string {

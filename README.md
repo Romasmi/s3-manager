@@ -160,6 +160,9 @@ Upload files or folders to S3 with optional archiving:
 
 # Upload with custom archive name
 ./s3manager upload project/ --archive-name "v1.0.0"
+
+# Exclude specific files from archive
+./s3manager upload project/ --exclude "*.log" --exclude ".DS_Store"
 ```
 
 **Example Output:**
@@ -267,6 +270,7 @@ Upload files and folders to S3 with optional archiving.
 - `--destination, -d`: Destination folder in S3 bucket
 - `--no-archive`: Upload files individually without creating archive
 - `--archive-name, -a`: Custom name for the archive file
+- `--exclude, -e`: Exclude files by pattern (e.g. '*.log', '.DS_Store')
 - `--confirm`: Skip confirmation prompt
 - `--dry-run`: Show what would be uploaded without actually uploading
 - `--timeout`: Operation timeout in seconds (default: 3600)

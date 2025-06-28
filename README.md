@@ -7,6 +7,7 @@ A Go-based CLI tool for managing S3-compatible storage.
 - 📊 **Bucket Information**: Get detailed bucket statistics including object count, total size, and metadata
 - 🗂️ **File Cleanup**: Delete files older than specified days with folder-specific targeting
 - 📤 **File Upload**: Upload files and folders with automatic archiving options
+- 📥 **File Download**: Download the latest file from a specific folder
 - 🔧 **Flexible Configuration**: Support for custom S3 endpoints (MinIO, DigitalOcean Spaces, etc.)
 - 🛡️ **Safety Features**: Confirmation prompts and dry-run mode for delete operations
 - ⚡ **Performance**: Efficient batch operations for large buckets
@@ -183,6 +184,48 @@ Upload files or folders to S3 with optional archiving:
 }
 ```
 
+### Download Latest File
+
+Download the most recent file from a specific folder in S3:
+
+```bash
+# Download the latest file from a folder to current directory
+./s3manager download backups/
+
+# Download to a specific destination
+./s3manager download logs/ --destination /tmp/downloads/
+
+# Download from a different bucket
+./s3manager download data/ --bucket my-other-bucket
+
+# Skip confirmation prompt
+./s3manager download archives/ --confirm
+
+# Verbose download with progress
+./s3manager download archives/ --verbose
+```
+
+**Example Output:**
+```json
+{
+  "bucket_name": "my-bucket",
+  "source_path": "backups/",
+  "items": [
+    {
+      "remote_path": "backups/archive-20240315-142233.zip",
+      "local_path": "/home/user/downloads/archive-20240315-142233.zip",
+      "size": 1048576,
+      "last_modified": "2024-03-15T14:22:33Z"
+    }
+  ],
+  "total_files": 1,
+  "total_size_bytes": 1048576,
+  "total_size_human": "1.0 MB",
+  "operation_time": "2024-03-15T15:30:45Z",
+  "download_duration": "1.2s"
+}
+```
+
 ## Command Reference
 
 ### Global Flags
@@ -212,6 +255,33 @@ Delete files older than specified days.
 - `--confirm`: Skip confirmation prompt
 - `--dry-run`: Show what would be deleted without actually deleting
 - `--timeout`: Operation timeout in seconds (default: 1800)
+
+### `upload` Command
+
+Upload files and folders to S3 with optional archiving.
+
+**Required Arguments:**
+- Files or folders to upload
+
+**Optional Flags:**
+- `--destination, -d`: Destination folder in S3 bucket
+- `--no-archive`: Upload files individually without creating archive
+- `--archive-name, -a`: Custom name for the archive file
+- `--confirm`: Skip confirmation prompt
+- `--dry-run`: Show what would be uploaded without actually uploading
+- `--timeout`: Operation timeout in seconds (default: 3600)
+
+### `download` Command
+
+Download the latest file from a specific folder in S3.
+
+**Required Arguments:**
+- Folder path in S3 to download from
+
+**Optional Flags:**
+- `--destination, -d`: Local destination path (default: current directory)
+- `--confirm`: Skip confirmation prompt
+- `--timeout`: Operation timeout in seconds (default: 3600)
 
 
 ## AWS Permissions

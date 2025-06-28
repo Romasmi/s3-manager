@@ -26,6 +26,7 @@ func init() {
 	rootCmd.AddCommand(bucketInfoCmd)
 	rootCmd.AddCommand(deleteOldCmd)
 	rootCmd.AddCommand(uploadCmd)
+	rootCmd.AddCommand(downloadCmd)
 
 	rootCmd.PersistentFlags().StringP("bucket", "b", "", "Override bucket name from config")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Enable verbose output")

@@ -42,6 +42,9 @@ If not specified, files will be uploaded to the root of the bucket.`,
   # Upload with different bucket
   s3manager upload data/ --bucket my-other-bucket
 
+  # Exclude specific files from archive
+  s3manager upload project/ --exclude "*.log" --exclude ".DS_Store"
+
   # Verbose upload with progress
   s3manager upload large-folder/ --verbose`,
 	Args: cobra.MinimumNArgs(1),
@@ -56,6 +59,7 @@ func runUpload(cmd *cobra.Command, args []string) {
 	archiveName, _ := cmd.Flags().GetString("archive-name")
 	confirm, _ := cmd.Flags().GetBool("confirm")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	excludeFlag, _ := cmd.Flags().GetStringSlice("exclude")
 
 	if err := utils.ValidatePaths(args); err != nil {
 		utils.PrintError(err, "upload")
@@ -97,6 +101,10 @@ func runUpload(cmd *cobra.Command, args []string) {
 			fmt.Printf("Archive name: %s\n", archiveName)
 		}
 
+		if len(excludeFlag) > 0 {
+			fmt.Printf("Exclude patterns: %v\n", excludeFlag)
+		}
+
 		fmt.Print("Continue with upload? (y/N): ")
 		var response string
 		_, err := fmt.Scanln(&response)
@@ -125,19 +133,22 @@ func runUpload(cmd *cobra.Command, args []string) {
 		cmd.Printf("  Paths: %v\n", args)
 		cmd.Printf("  Destination: %s\n", getDestinationDisplay(destination))
 		cmd.Printf("  Archive: %t\n", shouldArchive)
+		if len(excludeFlag) > 0 {
+			cmd.Printf("  Exclude patterns: %v\n", excludeFlag)
+		}
 		if dryRun {
 			cmd.Println("  DRY RUN MODE: No files will actually be uploaded")
 		}
 	}
 
 	if dryRun {
-		result := createDryRunResult(args, destination, shouldArchive, getBucketName(cmd))
+		result := createDryRunResult(args, destination, shouldArchive, getBucketName(cmd), excludeFlag)
 		if err := utils.PrintJSON(result); err != nil {
 			utils.PrintError(err, "upload")
 			return
 		}
 	} else {
-		result, err := client.UploadFiles(ctx, args, destination, shouldArchive)
+		result, err := client.UploadFiles(ctx, args, destination, shouldArchive, excludeFlag)
 		if err != nil {
 			utils.PrintError(err, "upload")
 			return
@@ -173,7 +184,7 @@ func getDestinationDisplay(destination string) string {
 	return destination
 }
 
-func createDryRunResult(paths []string, destination string, shouldArchive bool, bucketName string) interface{} {
+func createDryRunResult(paths []string, destination string, shouldArchive bool, bucketName string, excludePatterns []string) interface{} {
 	items := make([]interface{}, 0)
 
 	if shouldArchive {
@@ -207,7 +218,7 @@ func createDryRunResult(paths []string, destination string, shouldArchive bool, 
 		}
 	}
 
-	return map[string]interface{}{
+	result := map[string]interface{}{
 		"bucket_name":      bucketName,
 		"destination_path": destination,
 		"items":            items,
@@ -219,6 +230,12 @@ func createDryRunResult(paths []string, destination string, shouldArchive bool, 
 		"upload_duration":  "0s",
 		"dry_run":          true,
 	}
+
+	if len(excludePatterns) > 0 {
+		result["exclude_patterns"] = excludePatterns
+	}
+
+	return result
 }
 
 func init() {
@@ -228,6 +245,7 @@ func init() {
 	uploadCmd.Flags().Bool("confirm", false, "Skip confirmation prompt")
 	uploadCmd.Flags().Bool("dry-run", false, "Show what would be uploaded without actually uploading")
 	uploadCmd.Flags().Int("timeout", 3600, "Timeout in seconds for the operation (default: 1 hour)")
+	uploadCmd.Flags().StringSliceP("exclude", "e", []string{}, "Exclude files by pattern (e.g. '*.log', '.DS_Store')")
 
 	uploadCmd.SetUsageTemplate(`Usage:{{if .Runnable}}
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}

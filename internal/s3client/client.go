@@ -197,7 +197,7 @@ func (c *Client) DeleteOldFiles(ctx context.Context, folder string, daysOld int,
 	}, nil
 }
 
-func (c *Client) UploadFiles(ctx context.Context, paths []string, destinationPath string, shouldArchive bool) (*models.UploadResult, error) {
+func (c *Client) UploadFiles(ctx context.Context, paths []string, destinationPath string, shouldArchive bool, excludePatterns []string) (*models.UploadResult, error) {
 	startTime := time.Now()
 	bucketName := c.config.BucketName
 
@@ -214,7 +214,7 @@ func (c *Client) UploadFiles(ctx context.Context, paths []string, destinationPat
 
 	if shouldArchive {
 		archivePath = filepath.Join(os.TempDir(), utils.GenerateArchiveName(paths, ".zip"))
-		archiveInfo, err := utils.CreateArchive(paths, archivePath)
+		archiveInfo, err := utils.CreateArchive(paths, archivePath, excludePatterns)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create archive: %w", err)
 		}

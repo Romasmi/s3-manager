@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func CreateArchive(paths []string, outputPath string) (*models.ArchiveInfo, error) {
+func CreateArchive(paths []string, outputPath string, excludePatterns []string) (*models.ArchiveInfo, error) {
 	if err := ValidatePaths(paths); err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func CreateArchive(paths []string, outputPath string) (*models.ArchiveInfo, erro
 	createdAt := time.Now()
 
 	for _, path := range paths {
-		if err := addToArchive(zipWriter, path, ""); err != nil {
+		if err := addToArchive(zipWriter, path, "", excludePatterns); err != nil {
 			return nil, fmt.Errorf("failed to add %s to archive: %w", path, err)
 		}
 
@@ -69,10 +69,17 @@ func CreateArchive(paths []string, outputPath string) (*models.ArchiveInfo, erro
 	}, nil
 }
 
-func addToArchive(zipWriter *zip.Writer, sourcePath, basePath string) error {
+func addToArchive(zipWriter *zip.Writer, sourcePath, basePath string, excludePatterns []string) error {
 	return filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if shouldExclude(path, excludePatterns) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
 		header, err := zip.FileInfoHeader(info)
@@ -120,6 +127,23 @@ func addToArchive(zipWriter *zip.Writer, sourcePath, basePath string) error {
 		_, err = io.Copy(writer, file)
 		return err
 	})
+}
+
+func shouldExclude(path string, excludePatterns []string) bool {
+	if len(excludePatterns) == 0 {
+		return false
+	}
+
+	filename := filepath.Base(path)
+
+	for _, pattern := range excludePatterns {
+		matched, err := filepath.Match(pattern, filename)
+		if err == nil && matched {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getPathSize(path string) (int64, error) {

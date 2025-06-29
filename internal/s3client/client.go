@@ -210,7 +210,25 @@ func (c *Client) UploadFiles(ctx context.Context, paths []string, destinationPat
 	var archivePath string
 	var archiveCreated bool
 
-	uploader := manager.NewUploader(c.s3Client)
+	uploader := manager.NewUploader(c.s3Client, func(u *manager.Uploader) {
+		// Configure uploader options for no checksums
+		u.ClientOptions = append(u.ClientOptions, func(o *s3.Options) {
+			o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
+
+			// Disable response checksum validation
+			o.ResponseChecksumValidation = aws.ResponseChecksumValidationWhenRequired
+
+			// Disable logging of skipped checksum validation
+			o.DisableLogOutputChecksumValidationSkipped = true
+		})
+
+		// Set part size for multipart uploads (optional optimization)
+		u.PartSize = 64 * 1024 * 1024 // 64MB parts
+		u.Concurrency = 5             // Number of concurrent uploads
+
+		// Disable leave parts on error for cleaner uploads
+		u.LeavePartsOnError = false
+	})
 
 	if shouldArchive {
 		archivePath = filepath.Join(os.TempDir(), utils.GenerateArchiveName(paths, ".zip"))
@@ -339,7 +357,12 @@ func (c *Client) uploadSingleFile(ctx context.Context, uploader *manager.Uploade
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", localPath, err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			slog.Warn("Failed to close file", "path", localPath, "error", err)
+		}
+	}(file)
 
 	contentType := c.detectContentType(localPath)
 
@@ -348,20 +371,17 @@ func (c *Client) uploadSingleFile(ctx context.Context, uploader *manager.Uploade
 	uploader.PartSize = 5 * 1024 * 1024 // 5MB per part
 	uploader.Concurrency = 5            // 5 concurrent uploads
 
-	// skip the checksum for large files (> 100MB)
 	var checksumStr *string
-	if fileInfo.Size() <= 100*1024*1024 { // 100MB threshold
-		h := sha256.New()
-		if _, err := io.Copy(h, file); err != nil {
-			return fmt.Errorf("failed to calculate checksum: %w", err)
-		}
-		checksum := h.Sum(nil)
-		checksumEncoded := base64.StdEncoding.EncodeToString(checksum)
-		checksumStr = aws.String(checksumEncoded)
+	h := sha256.New()
+	if _, err := io.Copy(h, file); err != nil {
+		return fmt.Errorf("failed to calculate checksum: %w", err)
+	}
+	checksum := h.Sum(nil)
+	checksumEncoded := base64.StdEncoding.EncodeToString(checksum)
+	checksumStr = aws.String(checksumEncoded)
 
-		if _, err := file.Seek(0, 0); err != nil {
-			return fmt.Errorf("failed to reset file pointer: %w", err)
-		}
+	if _, err := file.Seek(0, 0); err != nil {
+		return fmt.Errorf("failed to reset file pointer: %w", err)
 	}
 
 	_, err = uploader.Upload(ctx, &s3.PutObjectInput{
